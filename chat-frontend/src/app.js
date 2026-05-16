@@ -7,54 +7,80 @@ const socket = io("http://localhost:5000");
 function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
 
+  // 🔹 Login Function (matches backend)
   const login = async () => {
-    const res = await axios.post("http://localhost:5000/api/auth/login", {
-      email,
-      password
-    });
-    setToken(res.data.token);
+    try {
+      const res = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          email,
+          password,
+        }
+      );
+
+      setToken(res.data.token);
+      alert("Login Successful");
+    } catch (err) {
+      alert("Login Failed");
+    }
   };
 
+  // 🔹 Send Message (matches socket.js)
   const sendMessage = () => {
+    if (!message) return;
+
     socket.emit("sendMessage", {
-      text: message
+      text: message,
     });
+
     setMessage("");
   };
 
+  // 🔹 Receive Message
   useEffect(() => {
     socket.on("receiveMessage", (msg) => {
       setMessages((prev) => [...prev, msg]);
     });
+
+    return () => socket.off("receiveMessage");
   }, []);
 
   return (
-    <div style={{ padding: 20 }}>
+    <div style={{ padding: 30 }}>
       {!token ? (
         <>
-          <h3>Login</h3>
-          <input placeholder="Email" onChange={(e) => setEmail(e.target.value)} />
-          <input placeholder="Password" type="password"
-            onChange={(e) => setPassword(e.target.value)} />
+          <h2>Login</h2>
+          <input
+            placeholder="Email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <br /><br />
+          <input
+            type="password"
+            placeholder="Password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <br /><br />
           <button onClick={login}>Login</button>
         </>
       ) : (
         <>
-          <h3>Chat</h3>
+          <h2>Chat</h2>
+
           <input
-            placeholder="Message"
             value={message}
+            placeholder="Type message..."
             onChange={(e) => setMessage(e.target.value)}
           />
           <button onClick={sendMessage}>Send</button>
 
           <ul>
-            {messages.map((m, i) => (
-              <li key={i}>{m.text}</li>
+            {messages.map((msg, index) => (
+              <li key={index}>{msg.text}</li>
             ))}
           </ul>
         </>
@@ -64,3 +90,4 @@ function App() {
 }
 
 export default App;
+
